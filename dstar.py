@@ -22,6 +22,7 @@ class D_Star:
         self.goal = goal
         self.size = world_size
         self.world = np.array([[[-1,-1,-1] for i in range(World_X)] for j in range(World_Y)])
+        # Priority Queue sorts by first element I think.
         self.Pqueue = Queue.PriorityQueue()
                        
     def init_path(self):
@@ -47,11 +48,26 @@ class D_Star:
                     pass
                 else:
                     k = self.world[current[1]][current[0]][1]
-                    distance = math.hypot(i - current[0], j - current[1]) + k 
-                    self.world[j][i] = [distance, distance, current]
-                    self.Pqueue.put( (distance, [i,j]) )
+                    distance = math.hypot(i - current[0], j - current[1]) + k
+                    if (world[j][i][1] == -1 or world[j][i] > distance): 
+                        self.world[j][i] = [distance, distance, current]
+                        self.Pqueue.put( (distance, [i,j]) )
         return 0
                     
     # Try to navigate through obstacles with actual world map
-    def navigate(new_map):
-        return 0
+    def navigate(self, new_map):
+        path = []
+        path.append(self.start)
+        current = self.start
+        
+        while (current ! = self.goal):
+            x = current[0]
+            y = current[1]
+            # Back propagate [2]
+            next_point = self.world[x][y][2]
+
+            if (new_map[next_point[1]][next_point[0]]):
+                # We have an obstacle - NEED TO IMPLEMENT
+        return path
+        
+        
