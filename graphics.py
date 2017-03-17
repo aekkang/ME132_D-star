@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Mar 13 2017
+
+@author: Andrew
+"""
+
 from Tkinter import *
 
 def cell(node, cell_size, type="new"):
