@@ -55,7 +55,7 @@ class D_Star:
         return 0
                     
     # Try to navigate through obstacles with actual world map
-    def navigate(self, new_map):
+    def navigate(self, actual_map):
         path = []
         path.append(self.start)
         current = self.start
@@ -63,11 +63,22 @@ class D_Star:
         while (current ! = self.goal):
             x = current[0]
             y = current[1]
-            # Back propagate [2]
-            next_point = self.world[x][y][2]
+            
+            if (actual_map[y][x]):
+                # Page 47 of slides
+                # Update cost and push neightbors onto stack
+                self.world[x][y][0] = 10000
 
-            if (new_map[next_point[1]][next_point[0]]):
-                # We have an obstacle - NEED TO IMPLEMENT
+                min_y = max(0, y - 1)
+                max_y = min(self.size[1] - 1, y + 1)
+                min_x = max(0, x - 1)
+                max_x = min(self.size[0] - 1, x + 1)                
+                
+                for j in xrange(min_y, max_y):
+                    for i in xrange(min_x, max_x):
+                        if (i,j) != current:
+                            self.Pqueue.put( (self.world[j][i][1] , [i,j]) )
+                
         return path
         
         
