@@ -91,8 +91,13 @@ class D_Star:
                 
                 for j in xrange(min_y, max_y):
                     for i in xrange(min_x, max_x):
-                        if (i,j) != current:
-                            self.Pqueue.put( (self.world[j][i].k , (i,j)) )
+                        self.Pqueue.put( (self.world[j][i].k , (i,j)) )
+                        self.world[j][i].t = 'o'
+                
+            current = self.Pqueue.get()
+            if (self.world[j][i].h == self.world[j][i].k):
+                pass
+            elif (self.world[j][i].h > self.world[j][i].k):
                 
         return path
         
