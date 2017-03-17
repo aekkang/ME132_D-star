@@ -39,7 +39,7 @@ class D_Star:
                        
     def init_path(self):
         current = self.goal
-        self.world[self.goal[1]][self.goal[0]] = Cell(0, 0, 'g')
+        self.world[self.goal[1]][self.goal[0]] = Cell(0, 0, 'g', 'o')
         
         while (current != self.start):
             self.init_neighbors(current)
@@ -65,6 +65,8 @@ class D_Star:
                     if (world[j][i].k == None or world[j][i].k > distance): 
                         self.world[j][i] = Cell(distance, distance, current, 'o')
                         self.Pqueue.put( (distance, (i,j)) )
+
+        self.world[current[1]][current[0]].t = 'c'
 
         return 0
                     
