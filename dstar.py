@@ -27,7 +27,7 @@ class D_Star:
     
     # Init function with robot world's decomposition
     # Start (x,y) and Goal (x,y) 
-    def __init__(self, world_size, start, goal):
+    def __init__(self, world, world_size, start, goal):
         World_X = world_size[0]
         World_Y = world_size[1]
         
@@ -53,6 +53,7 @@ class D_Star:
 
     def put(self, n, cell):
         self.world[n[1]][n[0]] = cell
+        self.Pqueue.put( (cell.h, cell) )
 
     def open_get(self):
         curr = self.Pqueue.get()
@@ -97,7 +98,7 @@ class D_Star:
     ##################################################
 
     def init_path(self):
-        self.put( (self.goal, Cell(0, 0, 'g', 'o', self.goal)) )
+        self.put(self.goal, Cell(0, 0, 'g', 'o', self.goal))
 
         while True:
             k_min = self.process_state()
@@ -107,36 +108,7 @@ class D_Star:
             elif self.get(self.start) == 'c':
                 return self.get_path(self.start)
 
-        # while (curr != self.start):
-        #     try:
-        #         self.init_neighbors(curr)
-        #         curr = open_get()[1]
-        #     except:
-        #         # No path found
-        #         return False
-
-        # return True
-
-    # def init_neighbors(self, curr):
-    #     # Limit to world border
-    #     neighbors = self.get_neighbors(curr)
-
-    #     for (i, j) in neighbors:
-    #         if (i,j) == curr:
-    #             pass
-    #         else:
-    #             k = self.world[curr[1]][curr[0]][1]
-    #             dist = math.hypot(i - curr[0], j - curr[1]) + k
-    #             if (world[j][i].k == None or world[j][i].k > dist): 
-    #                 self.world[j][i] = Cell(dist, dist, curr, 'o')
-    #                 self.Pqueue.put( (dist, (i,j)) )
-
-    #     self.world[curr[1]][curr[0]].t = 'c'
-
-    #     return 0
-
-    # Try to navigate through obstacles with actual world map
-    def navigate_map(self, actual_map, curr):
+    def change_map(self, actual_map, curr):
         x = curr[0]
         y = curr[1]
 
@@ -148,40 +120,15 @@ class D_Star:
                 for neighbor in neighbors:
                     self.modify_costs(sensed, neighbor, float("inf"))
 
-    def change_map(self, curr):
+    # Try to navigate through obstacles with actual world map
+    def navigate_map(self, curr):
         while True:
             k_min = self.process_state()
             
             if k_min == None:
                 return None
             elif self.get(curr).h <= k_min:
-                return self.get_path(self.start)
-
-
-        # while (curr != self.start):
-        #     try:
-        #         self.init_neighbors(curr)
-        #         curr = open_get()[1]
-        #     except:
-        #         # No path found
-        #         return False
-
-        # return True
-
-        return self.get_path(self.start)
-
-        # curr = self.goal
-        # self.world[self.goal[1]][self.goal[0]] = Cell(0, 0, 'g', 'o')
-        
-        # while (curr != self.start):
-        #     try:
-        #         self.init_neighbors(curr)
-        #         curr = self.Pqueue.get()[1]
-        #     except:
-        #         # No path found
-        #         return None
-
-        # return
+                return self.get_path(curr)
 
     def modify_costs(self, n1, n2, new_c):
         c[n2[1]][n2[0]][n1[1]][n1[0]] = new_c
@@ -236,3 +183,23 @@ class D_Star:
                     self.insert(neighbor, neighbor.h)
 
         return self.get_kmin()
+
+    def run(self, actual_map):
+        final_path = []
+
+        path = self.init_path()
+        if path == None:
+            return None
+
+        curr = self.start
+        while curr != self.goal:
+            self.change_map(actual_map, curr)
+            path = self.navigate_map(curr)
+
+            if path == None:
+                return None
+
+            curr = path[1]
+            final_path.append(curr)
+
+        return final_path
