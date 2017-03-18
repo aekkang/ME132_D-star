@@ -27,28 +27,26 @@ class D_Star:
     
     # Init function with robot world's decomposition
     # Start (x,y) and Goal (x,y) 
-    def __init__(self, world_size, start, goal):
-        World_X = world_size[0]
-        World_Y = world_size[1]
+    def __init__(self, size, start, goal):
+        world_x = size[0]
+        world_y = size[1]
         
         self.start = start
         self.goal = goal
-        self.size = world_size
-        self.world = [[Cell(None, None, None, 'n', (i, j)) for i in range(World_X)] for j in range(World_Y)]
-        self.Pqueue = Queue.PriorityQueue() # Open list
-        self.c = [[[[None for _ in range(World_X)] for _ in range(World_Y)]
-                 for _ in range(World_X)] for _ in range(World_Y)] # Edge costs.
+        self.size = size
+        self.world = [[Cell(None, None, None, 'n', (i, j)) for i in range(world_x)] for j in range(world_y)]
+        self.pqueue = Queue.PriorityQueue() # Open list
+        self.costs = [[[[None for _ in range(world_x)] for _ in range(world_y)] for _ in range(world_x)] for _ in range(world_y)]
 
-        for j1 in range(World_Y):
-            for i1 in range(World_X):
-                for j2 in range(World_Y):
-                    for i2 in range(World_X):
-                        self.c[j1][i1][j2][i2] = math.hypot(i2 - i1, j2 - j1)
+        for j1 in range(world_y):
+            for i1 in range(world_x):
+                for j2 in range(world_y):
+                    for i2 in range(world_x):
+                        self.costs[j1][i1][j2][i2] = math.hypot(i2 - i1, j2 - j1)
 
-    def cost(self, curr1, curr2):
-        x1, y1 = curr1.loc
-        x2, y2 = curr2.loc
-        return self.c[y2][x2][y1][x1]
+    # Helper functions below
+    # n denotes some tuple (i, j)
+    # curr denotes some Cell object
 
     def get(self, n):
         return self.world[n[1]][n[0]]
@@ -56,52 +54,59 @@ class D_Star:
     def put(self, n, cell):
         self.world[n[1]][n[0]] = cell
 
-    def open_get(self):
-        item = self.Pqueue.get()
+    def get_open(self):
+        item = self.pqueue.get()
         curr = self.get(item[1])
+        curr.t = 'c'
 
         return (item[0], curr)
 
-    def open_put(self, cell):
+    def put_open(self, cell):
         cell.t = 'o'
-        self.Pqueue.put( (cell.h, cell.loc) )
+        open_cells = [item[1] for item in self.pqueue.queue]
+        
+        if cell not in open_cells:
+            self.pqueue.put((cell.h, cell.loc))
 
     def get_kmin(self):
         try:
-            return sorted(self.Pqueue.queue)[0][0]
+            return sorted(self.pqueue.queue)[0][0]
         except:
             return None
 
-    def get_path(self, n):
-        curr = n
-        path = [curr]
+    def get_cost(self, curr1, curr2):
+        x1, y1 = curr1.loc
+        x2, y2 = curr2.loc
+
+        return self.costs[y2][x2][y1][x1]
+
+    def get_path(self, curr):
+        path = [curr.loc]
 
         while True:
-            cell = self.get(curr).b
+            curr = curr.b
             
-            if cell == None:
+            if curr == None:
                 return None
             else:
-                curr = cell.loc
-                path.append(curr)
+                path.append(curr.loc)
 
-                if curr == self.goal:
-                    import numpy as np
-                    from copy import deepcopy
-                    print
-                    print "World:"
-                    print "=================================================="
-                    lol = deepcopy(self.world)
-                    for i in range(len(lol)):
-                        for j in range(len(lol[0])):
-                            n = lol[i][j].loc
-                            if n in path:
-                                lol[i][j] = 1
-                            else:
-                                lol[i][j] = 0
-                    print np.array(lol)
-                    print
-
+                if curr.loc == self.goal:
+                    # import numpy as np
+                    # from copy import deepcopy
+                    # print
+                    # print "World:"
+                    # print "=================================================="
+                    # lol = deepcopy(self.world)
+                    # for i in range(len(lol)):
+                    #     for j in range(len(lol[0])):
+                    #         n = lol[i][j].loc
+                    #         if n in path:
+                    #             lol[i][j] = 1
+                    #         else:
+                    #             lol[i][j] = 0
+                    # print np.array(lol)
+                    # print
                     return path
 
     def get_neighbors(self, curr):
@@ -126,7 +131,7 @@ class D_Star:
     def init_path(self):
         goal = Cell(0, 0, 'g', 'o', self.goal)
         self.put(self.goal, goal)
-        self.open_put(goal)
+        self.put_open(goal)
 
         while True:
             # import numpy as np
@@ -148,9 +153,10 @@ class D_Star:
             # print
 
             k_min = self.process_state()
+            start = self.get(self.start)
 
-            if self.get(self.start).t == 'c':
-                return self.get_path(self.start)
+            if start.t == 'c':
+                return self.get_path(start)
             elif k_min == None:
                 return None
 
@@ -169,18 +175,17 @@ class D_Star:
 
             if k_min == None:
                 return None
-            elif self.get(curr).h <= k_min:
+            elif curr.h <= k_min:
                 return self.get_path(curr)
 
-    def modify_costs(self, n1, n2, new_c):
-        x1, y1 = n1.loc
-        x2, y2 = n2.loc
+    def modify_costs(self, curr1, curr2, new_c):
+        x1, y1 = curr1.loc
+        x2, y2 = curr2.loc
+        self.costs[y2][x2][y1][x1] = new_c
+        self.costs[y1][x1][y2][x2] = new_c
 
-        self.c[y2][x2][y1][x1] = new_c
-        
-        if n1.t == 'c':
-            curr = self.get(n1)
-            self.insert(curr, curr.h)
+        if curr1.t == 'c':
+            self.insert(curr1, curr1.h)
 
         return self.get_kmin()
 
@@ -193,40 +198,42 @@ class D_Star:
             curr.k = min(curr.h, h_new)
 
         curr.h = h_new
-        self.open_put(curr)
+        self.put_open(curr)
 
     def process_state(self):
         try:
-            k_old, curr = self.open_get()
+            k_old, curr = self.get_open()
         except:
             return None
 
         if k_old < curr.h:
             for neighbor in self.get_neighbors(curr):
                 if curr.t != 'n' and curr.h <= k_old \
-                and curr.h > neighbor.h + self.cost(neighbor, curr):
+                and curr.h > neighbor.h + self.get_cost(neighbor, curr):
                     curr.b = neighbor
-                    curr.h = neighbor.h + self.cost(neighbor, curr)
+                    curr.h = neighbor.h + self.get_cost(neighbor, curr)
+
         elif k_old == curr.h:
             for neighbor in self.get_neighbors(curr):
                 if (neighbor.t == 'n') \
-                or (neighbor.b == curr and neighbor.h != curr.h + self.cost(curr, neighbor)) \
-                or (neighbor.b != curr and neighbor.h > curr.h + self.cost(curr, neighbor)):
+                or (neighbor.b == curr and neighbor.h != curr.h + self.get_cost(curr, neighbor)) \
+                or (neighbor.b != curr and neighbor.h > curr.h + self.get_cost(curr, neighbor)):
                     neighbor.b = curr
-                    self.insert(neighbor, curr.h + self.cost(curr, neighbor))
+                    self.insert(neighbor, curr.h + self.get_cost(curr, neighbor))
+
         else:
             for neighbor in self.get_neighbors(curr):
                 if neighbor.t == 'n' \
-                or (neighbor.b == curr and neighbor.h != curr.h + self.cost(curr, neighbor)):
+                or (neighbor.b == curr and neighbor.h != curr.h + self.get_cost(curr, neighbor)):
                     neighbor.b = curr
-                    self.insert(neighbor, curr.h + self.cost(curr, neighbor))
-                elif neighbor.b != curr and neighbor.h > curr.h + self.cost(curr, neighbor):
+                    self.insert(neighbor, curr.h + self.get_cost(curr, neighbor))
+
+                elif neighbor.b != curr and neighbor.h > curr.h + self.get_cost(curr, neighbor):
                     self.insert(curr, curr.h)
-                elif neighbor.b != curr and curr.h > neighbor.h + self.cost(curr, neighbor) \
+
+                elif neighbor.b != curr and curr.h > neighbor.h + self.get_cost(curr, neighbor) \
                 and neighbor.t == 'c' and neighbor.h > k_old:
                     self.insert(neighbor, neighbor.h)
-
-        curr.t = 'c'
 
         return self.get_kmin()
 
@@ -237,10 +244,10 @@ class D_Star:
         if path == None:
             return None
 
-        curr = self.start
-        while curr != self.goal:
-            self.change_map(actual_map, self.get(curr))
-            if self.get(curr).t != 'c':
+        curr = self.get(self.start)
+        while curr.loc != self.goal:
+            self.change_map(actual_map, curr)
+            if curr.t != 'c':
                 path = self.navigate_map(curr)
             else:
                 path = self.get_path(curr)
@@ -248,8 +255,23 @@ class D_Star:
             if path == None:
                 return None
 
-            curr = path[1]
-            print path
-            final_path.append(curr)
+            curr = self.get(path[1])
+            final_path.append(path[1])
+
+        # import numpy as np
+        # from copy import deepcopy
+        # print
+        # print "World:"
+        # print "=================================================="
+        # lol = deepcopy(self.world)
+        # for i in range(len(lol)):
+        #     for j in range(len(lol[0])):
+        #         n = lol[i][j].loc
+        #         if n in final_path:
+        #             lol[i][j] = 1
+        #         else:
+        #             lol[i][j] = 0
+        # print np.array(lol)
+        # print
 
         return final_path
