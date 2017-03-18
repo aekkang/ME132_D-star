@@ -55,11 +55,15 @@ class D_Star:
         self.world[n[1]][n[0]] = cell
 
     def get_open(self):
-        item = self.pqueue.get()
-        curr = self.get(item[1])
-        curr.t = 'c'
+        if not self.pqueue.empty():
+            item = self.pqueue.get()
+            curr = self.get(item[1])
+            curr.t = 'c'
 
-        return (item[0], curr)
+            return (item[0], curr)
+
+        else:
+            return (None, None)
 
     def put_open(self, cell):
         cell.t = 'o'
@@ -155,10 +159,8 @@ class D_Star:
             k_min = self.process_state()
             start = self.get(self.start)
 
-            if start.t == 'c':
+            if k_min == None and start.t == 'c':
                 return self.get_path(start)
-            elif k_min == None:
-                return None
 
     def change_map(self, actual_map, curr):
         for sensed in self.get_neighbors(curr):
@@ -173,9 +175,7 @@ class D_Star:
         while True:
             k_min = self.process_state()
 
-            if k_min == None:
-                return None
-            elif curr.h <= k_min:
+            if k_min == None or curr.h <= k_min:
                 return self.get_path(curr)
 
     def modify_costs(self, curr1, curr2, new_c):
@@ -201,9 +201,9 @@ class D_Star:
         self.put_open(curr)
 
     def process_state(self):
-        try:
-            k_old, curr = self.get_open()
-        except:
+        k_old, curr = self.get_open()
+        
+        if k_old == None:
             return None
 
         if k_old < curr.h:
@@ -247,10 +247,7 @@ class D_Star:
         curr = self.get(self.start)
         while curr.loc != self.goal:
             self.change_map(actual_map, curr)
-            if curr.t != 'c':
-                path = self.navigate_map(curr)
-            else:
-                path = self.get_path(curr)
+            path = self.navigate_map(curr)
 
             if path == None:
                 return None
@@ -258,20 +255,22 @@ class D_Star:
             curr = self.get(path[1])
             final_path.append(path[1])
 
-        # import numpy as np
-        # from copy import deepcopy
-        # print
-        # print "World:"
-        # print "=================================================="
-        # lol = deepcopy(self.world)
-        # for i in range(len(lol)):
-        #     for j in range(len(lol[0])):
-        #         n = lol[i][j].loc
-        #         if n in final_path:
-        #             lol[i][j] = 1
-        #         else:
-        #             lol[i][j] = 0
-        # print np.array(lol)
-        # print
+        # DEBUG
+        import numpy as np
+        from copy import deepcopy
+        print
+        print "World:"
+        print "=================================================="
+        lol = deepcopy(self.world)
+        for i in range(len(lol)):
+            for j in range(len(lol[0])):
+                n = lol[i][j].loc
+                if n in final_path:
+                    lol[i][j] = 1
+                else:
+                    lol[i][j] = 0
+        print np.array(lol)
+        print
+        # DEBUG END
 
         return final_path
