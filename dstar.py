@@ -38,8 +38,17 @@ class D_Star:
         self.c = [[[[None for _ in range(World_X)] for _ in range(World_Y)]
                  for _ in range(World_X)] for _ in range(World_Y)] # Edge costs.
 
+        for j1 in range(World_Y):
+            for i1 in range(World_X):
+                for j2 in range(World_Y):
+                    for i2 in range(World_X):
+                        self.c[j1][i1][j2][i2] = math.hypot(i2 - i1, j2 - j1)
+
     def cost(self, n1, n2):
         return c[n2[1]][n2[0]][n1[1]][n1[0]]
+
+    def get(self, n):
+        return self.world[n[1]][n[0]]
                        
     def init_path(self):
         curr = self.goal
@@ -48,7 +57,7 @@ class D_Star:
         while (curr != self.start):
             try:
                 self.init_neighbors(curr)
-                curr = self.Pqueue.get()
+                curr = self.Pqueue.get()[1]
             except:
                 # No path found
                 return False
@@ -115,7 +124,7 @@ class D_Star:
         while (curr != self.start):
             try:
                 self.init_neighbors(curr)
-                curr = self.Pqueue.get()
+                curr = self.Pqueue.get()[1]
             except:
                 # No path found
                 return False
@@ -130,3 +139,35 @@ class D_Star:
             self.world[j][i].t = 'o'
 
         return sorted(self.Pqueue.queue)[0][0]
+
+    def process_state():
+        try:
+            n = self.Pqueue.get()
+            k_old = n[0]
+            curr = self.get(n[1])
+        except:
+            return False
+
+        if k_old < curr.h:
+            for neighbor in self.get_neighbors(curr):
+                n_neighbor = self.get(neighbor)
+
+                if n.t != 'n' and n.h <= k_old
+                and n.h > neighbor
+
+        neighbors = self.get_neighbors(curr)
+
+        for (i, j) in neighbors:
+            if (i,j) == curr:
+                pass
+            else:
+                k = self.world[curr[1]][curr[0]].h
+                dist = self. + k
+                if (world[j][i].k == None or world[j][i].k > dist): 
+                    self.world[j][i] = Cell(dist, dist, curr, 'o')
+                    self.Pqueue.put( (dist, (i,j)) )
+
+        self.world[curr[1]][curr[0]].t = 'c'
+
+        return 0
+
