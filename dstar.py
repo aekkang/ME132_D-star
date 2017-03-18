@@ -15,11 +15,12 @@ class Cell:
     #   k:      smallest value of h seen so far
     #   b:      back pointer
     #   t:      tag ('c' - closed; 'o' - open; 'n' - new)
-    def __init__(self, h, k, b, t):
+    def __init__(self, h, k, b, t, loc):
         self.h = h
         self.k = k
         self.b = b
         self.t = t
+        self.loc = loc
 
 
 class D_Star:
@@ -33,7 +34,7 @@ class D_Star:
         self.start = start
         self.goal = goal
         self.size = world_size
-        self.world = [[Cell(None, None, None, 'n') for _ in range(World_X)] for _ in range(World_Y)]
+        self.world = [[Cell(None, None, None, 'n', (i, j)) for i in range(World_X)] for j in range(World_Y)]
         self.Pqueue = Queue.PriorityQueue() # Open list
         self.c = [[[[None for _ in range(World_X)] for _ in range(World_Y)]
                  for _ in range(World_X)] for _ in range(World_Y)] # Edge costs.
@@ -49,24 +50,36 @@ class D_Star:
 
     def get(self, n):
         return self.world[n[1]][n[0]]
-                       
-    def init_path(self):
-        curr = self.goal
-        self.world[self.goal[1]][self.goal[0]] = Cell(0, 0, 'g', 'o')
-        
-        while (curr != self.start):
-            try:
-                self.init_neighbors(curr)
-                curr = self.Pqueue.get()[1]
-            except:
-                # No path found
-                return False
 
-        return True
+    def put(self, n, cell):
+        self.world[n[1]][n[0]] = cell
+
+    def open_get(self):
+        curr = self.Pqueue.get()
+
+        return (curr[0], self.get(curr[1]))
+
+    def get_kmin(self):
+        try:
+            return sorted(self.Pqueue.queue)[0][0]
+        except:
+            return None
+
+    def get_path(self, n):
+        curr = n
+        path = [curr]
+
+        while True:
+            curr = self.get(curr).b
+            path.append(curr)
+
+            if curr == self.goal:
+                return path
+            elif curr == None:
+                return None
 
     def get_neighbors(self, curr):
         neighbors = []
-
         y = curr[0]
         x = curr[1]
 
@@ -77,97 +90,149 @@ class D_Star:
         
         for j in xrange(min_y, max_y):
             for i in xrange(min_x, max_x):
-                neighbors.append((i, j))
+                neighbors.append(self.get(i, j))
 
         return neighbors
 
-    def init_neighbors(self, curr):
-        # Limit to world border
-        neighbors = self.get_neighbors(curr)
+    ##################################################
 
-        for (i, j) in neighbors:
-            if (i,j) == curr:
-                pass
-            else:
-                k = self.world[curr[1]][curr[0]][1]
-                dist = math.hypot(i - curr[0], j - curr[1]) + k
-                if (world[j][i].k == None or world[j][i].k > dist): 
-                    self.world[j][i] = Cell(dist, dist, curr, 'o')
-                    self.Pqueue.put( (dist, (i,j)) )
+    def init_path(self):
+        self.put( (self.goal, Cell(0, 0, 'g', 'o', self.goal)) )
 
-        self.world[curr[1]][curr[0]].t = 'c'
+        while True:
+            k_min = self.process_state()
 
-        return 0
+            if k_min == None:
+                return None
+            elif self.get(self.start) == 'c':
+                return self.get_path(self.start)
+
+        # while (curr != self.start):
+        #     try:
+        #         self.init_neighbors(curr)
+        #         curr = open_get()[1]
+        #     except:
+        #         # No path found
+        #         return False
+
+        # return True
+
+    # def init_neighbors(self, curr):
+    #     # Limit to world border
+    #     neighbors = self.get_neighbors(curr)
+
+    #     for (i, j) in neighbors:
+    #         if (i,j) == curr:
+    #             pass
+    #         else:
+    #             k = self.world[curr[1]][curr[0]][1]
+    #             dist = math.hypot(i - curr[0], j - curr[1]) + k
+    #             if (world[j][i].k == None or world[j][i].k > dist): 
+    #                 self.world[j][i] = Cell(dist, dist, curr, 'o')
+    #                 self.Pqueue.put( (dist, (i,j)) )
+
+    #     self.world[curr[1]][curr[0]].t = 'c'
+
+    #     return 0
 
     # Try to navigate through obstacles with actual world map
-    def navigate_map(self, actual_map):
-        curr = self.start
-        
-        while (curr ! = self.goal):
-            x = curr[0]
-            y = curr[1]
-            
-            sensed = self.get_neighbors(curr)
+    def navigate_map(self, actual_map, curr):
+        x = curr[0]
+        y = curr[1]
 
-            for n_sensed in sensed:
-                i, j = n_sensed
-                neighbors = self.get_neighbors((i, j))
+        for sensed in self.get_neighbors(curr):
+            neighbors = self.get_neighbors(sensed)
+            i, j = neighbor
 
-                if (actual_map[j][i]):
-                    for n_neighbor in neighbors:
-                        modify_costs(n_sensed, n_neighbor, float("inf"))
-                
+            if (actual_map[j][i]):
+                for neighbor in neighbors:
+                    self.modify_costs(sensed, neighbor, float("inf"))
+
     def change_map(self, curr):
-        curr = self.goal
-        self.world[self.goal[1]][self.goal[0]] = Cell(0, 0, 'g', 'o')
-        
-        while (curr != self.start):
-            try:
-                self.init_neighbors(curr)
-                curr = self.Pqueue.get()[1]
-            except:
-                # No path found
-                return False
+        while True:
+            k_min = self.process_state()
+            
+            if k_min == None:
+                return None
+            elif self.get(curr).h <= k_min:
+                return self.get_path(self.start)
 
-        return True
-                
+
+        # while (curr != self.start):
+        #     try:
+        #         self.init_neighbors(curr)
+        #         curr = open_get()[1]
+        #     except:
+        #         # No path found
+        #         return False
+
+        # return True
+
+        return self.get_path(self.start)
+
+        # curr = self.goal
+        # self.world[self.goal[1]][self.goal[0]] = Cell(0, 0, 'g', 'o')
+        
+        # while (curr != self.start):
+        #     try:
+        #         self.init_neighbors(curr)
+        #         curr = self.Pqueue.get()[1]
+        #     except:
+        #         # No path found
+        #         return None
+
+        # return
+
     def modify_costs(self, n1, n2, new_c):
         c[n2[1]][n2[0]][n1[1]][n1[0]] = new_c
         
         if n1.t == 'c':
-            self.Pqueue.put( (self.world[j][i].k , (i,j)) )
-            self.world[j][i].t = 'o'
+            curr = self.get(n1)
+            self.insert(n1, curr.h)
 
-        return sorted(self.Pqueue.queue)[0][0]
+        return self.get_kmin()
+
+    def insert(n, h_new):
+        if n.t == 'n':
+            n.k = h_new
+        elif n.t == 'o':
+            n.k = min(k, h_new)
+        elif n.t == 'c':
+            n.k = min(n.h, h_new)
+
+        n.h = h_new
+        n.t = 'o'
+        self.Pqueue.put( (n.h, n.loc) )
 
     def process_state():
         try:
-            n = self.Pqueue.get()
-            k_old = n[0]
-            curr = self.get(n[1])
+            k_old, curr = self.open_get()
         except:
-            return False
+            return None
 
         if k_old < curr.h:
             for neighbor in self.get_neighbors(curr):
-                n_neighbor = self.get(neighbor)
+                if curr.t != 'n' and curr.h <= k_old \
+                and curr.h > neighbor.h + self.cost(neighbor, curr):
+                    curr.b = neighbor
+                    curr.h = neighbor.h + self.cost(neighbor, curr)
+        elif k_old == curr.h:
+            for neighbor in self.get_neighbors(curr):
+                if (neighbor.t == 'n') \
+                or (neighbor.b == curr and neighbor.h != curr.h + self.cost(curr, neighbor)) \
+                or (neighbor.b != curr and neighbor.h > curr.h + self.cost(curr, neighbor)):
+                    neighbor.b = curr
+                    self.insert(neighbor, curr.h + self.cost(curr, neighbor))
+        else:
+            for neighbor in self.get_neighbors(curr):
+                if neighbor.t == 'n' \
+                or (neighbor.b == curr and neighbor.h != curr.h + self.cost(curr, neighbor)):
+                    neighbor.b = curr
+                    self.insert(neighbor, curr.h + self.cost(curr, neighbor))
+                elif neighbor.b != curr and neighbor.h > curr.h + self.cost(curr, neighbor):
+                    self.insert(curr, curr.h)
+                elif neighbor.b != curr and curr.h > neighbor.h + self.cost(curr, neighbor) \
+                and neighbor.t == 'c' and neighbor.h > k_old:
+                    self.insert(neighbor, neighbor.h)
 
-                if n.t != 'n' and n.h <= k_old
-                and n.h > neighbor
-
-        neighbors = self.get_neighbors(curr)
-
-        for (i, j) in neighbors:
-            if (i,j) == curr:
-                pass
-            else:
-                k = self.world[curr[1]][curr[0]].h
-                dist = self. + k
-                if (world[j][i].k == None or world[j][i].k > dist): 
-                    self.world[j][i] = Cell(dist, dist, curr, 'o')
-                    self.Pqueue.put( (dist, (i,j)) )
-
-        self.world[curr[1]][curr[0]].t = 'c'
-
-        return 0
-
+        return self.get_kmin()
