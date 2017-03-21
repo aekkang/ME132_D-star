@@ -9,19 +9,15 @@ def tuple_split(f):
     return [int(coord) for coord in f.readline().split(',')]
 
 def world(filename):
-    '''
-    Parses world from argument file. File is 0-indexed.
-    File should be in the following format:
-
-    World dimensions
-    Start
-    Goal
-
-    List of obstacles (separated by newlines)
-
-
-    All values are tuple coordinates separated by commas.
-    '''
+    # Parses world from argument file. File is 0-indexed.
+    # File should be in the following format:
+    #
+    # World dimensions
+    # Start
+    # Goal
+    #
+    # List of obstacles (separated by newlines)
+    #
 
     # World dimensions.
     f = open(filename)

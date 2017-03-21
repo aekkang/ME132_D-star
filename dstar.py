@@ -9,8 +9,6 @@ import math
 import Queue
 from graphics import Graphics
 
-DEBUG = 0
-
 class Cell:
 
     # Access cell values:
@@ -40,6 +38,7 @@ class D_Star:
         self.world = [[Cell(None, None, None, 'n', (i, j)) for i in range(world_x)] for j in range(world_y)]
         self.pqueue = Queue.PriorityQueue() # Open list
         self.costs = [[[[None for _ in range(world_x)] for _ in range(world_y)] for _ in range(world_x)] for _ in range(world_y)]
+        self.obstacles = []
 
         for j1 in range(world_y):
             for i1 in range(world_x):
@@ -73,12 +72,6 @@ class D_Star:
         open_cells = [item[1] for item in self.pqueue.queue]
         
         self.pqueue.put((cell.h, cell.loc))
-        
-        # if cell not in open_cells:
-        #     self.pqueue.put((cell.h, cell.loc))
-        # else:
-        #     i = open_cells.index(cell)
-        #     open_cells[i] = (cell.h, cell)
 
     def get_kmin(self):
         try:
@@ -98,30 +91,12 @@ class D_Star:
         while True:
             curr = curr.b
 
-            if DEBUG:
-                print curr.b.loc
-            
             if curr == None:
                 return None
             else:
                 path.append(curr.loc)
 
                 if curr.loc == self.goal:
-                    # import numpy as np
-                    # from copy import deepcopy
-                    # print
-                    # print "World:"
-                    # print "=================================================="
-                    # lol = deepcopy(self.world)
-                    # for i in range(len(lol)):
-                    #     for j in range(len(lol[0])):
-                    #         n = lol[i][j].loc
-                    #         if n in path:
-                    #             lol[i][j] = 1
-                    #         else:
-                    #             lol[i][j] = 0
-                    # print np.array(lol)
-                    # print
                     return path
 
     def get_neighbors(self, curr):
@@ -141,16 +116,6 @@ class D_Star:
 
         return neighbors
 
-    def get_current_obstacles(self):
-        obstacles = []
-
-        for j in range(len(self.world)):
-            for i in range(len(self.world[0])):
-                if self.world[j][i].h == float("inf"):
-                    obstacles.append((i, j))
-
-        return obstacles
-
     ##################################################
 
     def init_path(self):
@@ -160,24 +125,6 @@ class D_Star:
         self.put_open(goal)
 
         while True:
-            # import numpy as np
-            # from copy import deepcopy
-            # print
-            # print "World:"
-            # print "=================================================="
-            # lol = deepcopy(self.world)
-            # for i in range(len(lol)):
-            #     for j in range(len(lol[0])):
-            #         tag = lol[i][j].t
-            #         if tag == 'c':
-            #             lol[i][j] = 0
-            #         elif tag == 'n':
-            #             lol[i][j] = -1
-            #         else:
-            #             lol[i][j] = 0
-            # print np.array(lol)
-            # print
-
             k_min = self.process_state()
             start = self.get(self.start)
 
@@ -190,38 +137,14 @@ class D_Star:
                 i, j = neighbor.loc
 
                 if (actual_map[j][i]):
+                    self.obstacles.append((i, j))
                     self.modify_costs(sensed, neighbor, float("inf"))
 
-    # Try to navigate through obstacles with actual world map
     def navigate_map(self, curr):
-        if DEBUG:
-            print "=================================================="
-            print "DEBUG: Changing map"
-            print "=================================================="
-
         while True:
             k_min = self.process_state()
 
-            if DEBUG:
-                import numpy as np
-                from copy import deepcopy
-                print
-                lol = deepcopy(self.world)
-                for i in range(len(lol)):
-                    for j in range(len(lol[0])):
-                        if lol[i][j].h == float("inf"):
-                            lol[i][j] = 'infty'
-                        else:
-                            lol[i][j] = "%.3f" % lol[i][j].h
-                print np.array(lol)
-
             if k_min == None or curr.h <= k_min:
-                if DEBUG:
-                    print "=================================================="
-                    print "DEBUG: Done"
-                    print "=================================================="
-                    print
-
                 return self.get_path(curr)
 
     def modify_costs(self, curr1, curr2, new_c):
@@ -236,12 +159,9 @@ class D_Star:
         return self.get_kmin()
 
     def insert(self, curr, h_new):
-        #DEBUG
         existing = [item[1] for item in self.pqueue.queue]
         if curr in existing:
             return
-            # i = existing.index(curr)
-            # self.pqueue.queue[i] = (curr.h, curr)
 
         if curr.t == 'n':
             curr.k = h_new
@@ -261,19 +181,10 @@ class D_Star:
         if k_old == None:
             return None
 
-        if DEBUG:
-            print
-            print curr.loc
-
         if k_old < curr.h:
             for neighbor in self.get_neighbors(curr):
                 if curr.t != 'n' and curr.h <= k_old \
                 and curr.h > neighbor.h + self.get_cost(neighbor, curr):
-                    if DEBUG:
-                        print "\n\n\n"
-                        print "EHY", neighbor
-                        print "\n\n\n"
-
                     curr.b = neighbor
                     curr.h = neighbor.h + self.get_cost(neighbor, curr)
 
@@ -282,11 +193,6 @@ class D_Star:
                 if (neighbor.t == 'n') \
                 or (neighbor.b == curr and neighbor.h != curr.h + self.get_cost(curr, neighbor)) \
                 or (neighbor.b != curr and neighbor.h > curr.h + self.get_cost(curr, neighbor)):
-                    if DEBUG:
-                        print "\n\n\n"
-                        print "WOWO", curr
-                        print "\n\n\n"
-
                     neighbor.b = curr
                     self.insert(neighbor, curr.h + self.get_cost(curr, neighbor))
 
@@ -306,9 +212,10 @@ class D_Star:
 
         return self.get_kmin()
 
-    def run(self, actual_map):
-        graphics = Graphics(actual_map)
-        final_path = []
+    def run(self, actual_map, size):
+        final_path = [self.start]
+        graphics = Graphics(actual_map, size=size)
+        graphics.display(final_path, self.obstacles)
 
         path = self.init_path()
         if path == None:
@@ -316,40 +223,8 @@ class D_Star:
 
         curr = self.get(self.start)
 
-        if DEBUG:
-            iter = 0
-
         while curr.loc != self.goal:
-            if DEBUG:
-                print iter
-                iter += 1
-
-                import numpy as np
-                from copy import deepcopy
-                print
-                print "World:"
-                print "=================================================="
-                lol = deepcopy(self.world)
-                for i in range(len(lol)):
-                    for j in range(len(lol[0])):
-                        if lol[i][j].b == None:
-                            print "AHHHHHHHHHHHHHHHHHHHHHHH"
-                        else:
-                            print lol[i][j].b
-                print "DONENENENENE"
-                print
-
-            if DEBUG:
-                print "QUEUE"
-                print sorted(self.pqueue.queue)
-
             self.change_map(actual_map, curr)
-
-            if DEBUG:
-                print
-                print "QUEUE"
-                print sorted(self.pqueue.queue)
-
             path = self.navigate_map(curr)
 
             if path == None:
@@ -358,45 +233,7 @@ class D_Star:
             curr = self.get(path[1])
             final_path.append(path[1])
 
-            if True:
-                print "CURRENT: ", curr.loc
+            graphics.display(final_path, self.obstacles)
 
-            if True:
-                import numpy as np
-                from copy import deepcopy
-                print
-                print "World:"
-                print "=================================================="
-                lol = deepcopy(self.world)
-                for i in range(len(lol)):
-                    for j in range(len(lol[0])):
-                        n = lol[i][j].loc
-                        if n in final_path:
-                            lol[i][j] = 1
-                        else:
-                            lol[i][j] = 0
-                print np.array(lol)
-                print
-
-            obstacles = self.get_current_obstacles()
-            graphics.display(final_path, obstacles)
-
-        if DEBUG:
-            import numpy as np
-            from copy import deepcopy
-            print
-            print "World:"
-            print "=================================================="
-            lol = deepcopy(self.world)
-            for i in range(len(lol)):
-                for j in range(len(lol[0])):
-                    n = lol[i][j].loc
-                    if n in final_path:
-                        lol[i][j] = 1
-                    else:
-                        lol[i][j] = 0
-            print np.array(lol)
-            print
-
-        graphics.display(final_path, obstacles, done=True)
+        graphics.display(final_path, self.obstacles, done=True)
         return final_path
