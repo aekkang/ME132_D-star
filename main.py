@@ -26,7 +26,24 @@ goal = (20, 30)
 for j in range(31):
     if j == 15:
         continue
-    environment[j][5] = 1
+    environment[j][8] = 1
+
+for j in range(31):
+    if j == 2:
+        continue
+    environment[j][15] = 1
+
+# environment = [[0 for i in range(7)] for j in range(8)]
+# start = (0, 0)
+# goal = (6, 7)
+
+
+
+
+# for j in range(8):
+#     if j == 7:
+#         continue
+#     environment[j][4] = 1
 
 import numpy as np
 print
@@ -38,3 +55,10 @@ print
 
 world = (environment, start, goal)
 main(world)
+
+import numpy as np
+print
+print "World:"
+print "=================================================="
+print np.array(environment)
+print
