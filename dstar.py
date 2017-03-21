@@ -7,6 +7,7 @@ Created on Thu Mar 16 11:04:31 2017
 
 import math
 import Queue
+from graphics import Graphics
 
 DEBUG = 0
 
@@ -139,6 +140,16 @@ class D_Star:
                 neighbors.append(self.get((i, j)))
 
         return neighbors
+
+    def get_current_obstacles(self):
+        obstacles = []
+
+        for j in range(len(self.world)):
+            for i in range(len(self.world[0])):
+                if self.world[j][i].h == float("inf"):
+                    obstacles.append((i, j))
+
+        return obstacles
 
     ##################################################
 
@@ -296,6 +307,7 @@ class D_Star:
         return self.get_kmin()
 
     def run(self, actual_map):
+        graphics = Graphics(actual_map)
         final_path = []
 
         path = self.init_path()
@@ -366,6 +378,9 @@ class D_Star:
                 print np.array(lol)
                 print
 
+            obstacles = self.get_current_obstacles()
+            graphics.display(final_path, obstacles)
+
         if DEBUG:
             import numpy as np
             from copy import deepcopy
@@ -383,4 +398,5 @@ class D_Star:
             print np.array(lol)
             print
 
+        graphics.display(final_path, obstacles, done=True)
         return final_path
