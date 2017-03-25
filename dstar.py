@@ -214,7 +214,7 @@ class D_Star:
 
     def run(self, actual_map, size):
         final_path = [self.start]
-        graphics = Graphics(actual_map, size=size)
+        graphics = Graphics(actual_map, self.start, self.goal, size=size)
         graphics.display(final_path, self.obstacles)
 
         path = self.init_path()

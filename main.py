@@ -23,7 +23,7 @@ if __name__ == "__main__":
         print "usage: python main.py world<n> [cell_size]"
         exit(1)
 
-    filename = sys.argv[1] + ".txt"
+    filename = sys.argv[1]
 
     if len(sys.argv) > 2:
         size = sys.argv[2]
